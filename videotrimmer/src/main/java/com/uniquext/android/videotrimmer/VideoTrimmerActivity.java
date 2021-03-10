@@ -10,7 +10,6 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.widget.VideoView;
 
@@ -49,7 +48,7 @@ import java.util.Locale;
  * @description $
  * @date 2021-03-09  14:36
  */
-public class VideoTrimmerActivity extends AppCompatActivity implements VideoFrameHelper.OnFrameBitmapListener , RangeSeekBar.OnRangeSeekBarChangeListener {
+public class VideoTrimmerActivity extends AppCompatActivity implements VideoFrameHelper.OnFrameBitmapListener, RangeSeekBar.OnRangeSeekBarChangeListener {
 
     private static final String INTENT_VIDEO_PATH = "INTENT_VIDEO_PATH";
 
@@ -120,7 +119,6 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
                         endTime
                 );
             } catch (IOException e) {
-                Log.e("####", "Error");
                 e.printStackTrace();
             }
         });
@@ -199,7 +197,7 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
         int left = firstVisibleItem * startView.getWidth() + recyclerView.getPaddingStart() - startView.getLeft();
 
         startTime = transformLengthTime(left + start, startView.getWidth());
-        endTime =  transformLengthTime(left + start + length, startView.getWidth());
+        endTime = transformLengthTime(left + start + length, startView.getWidth());
         videoView.seekTo((int) startTime);
     }
 

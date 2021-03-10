@@ -4,7 +4,6 @@ import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
-import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -96,7 +95,6 @@ public class TrimmerHelper {
             videoInfo.size = sampleSize;
             videoInfo.flags = mediaExtractor.getSampleFlags();
             videoInfo.presentationTimeUs = presentationTimeUs;
-            Log.e("####", "presentationTimeUs " + presentationTimeUs);
 
             mediaMuxer.writeSampleData(mediaMuxerTrack, inputBuffer, videoInfo);
             mediaExtractor.advance();
