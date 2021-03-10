@@ -2,7 +2,7 @@ package com.uniquext.android.videotrimmer;
 
 import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
-import android.util.Log;
+import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Size;
@@ -73,7 +73,11 @@ public class VideoFrameHelper {
                 .map(new Function<Long, Bitmap>() {
                     @Override
                     public Bitmap apply(Long aLong) throws Exception {
-                        return retriever.getScaledFrameAtTime(aLong * 1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, targetSize[0], targetSize[1]);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                            return retriever.getScaledFrameAtTime(aLong * 1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, targetSize[0], targetSize[1]);
+                        } else {
+                            return retriever.getFrameAtTime(aLong * 1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+                        }
                     }
                 })
                 .subscribeOn(Schedulers.io())
@@ -88,7 +92,6 @@ public class VideoFrameHelper {
                     @Override
                     public void onNext(Bitmap bitmap) {
                         listener.onFrameBitmap(bitmap);
-//                        Log.e("####", "onNext " + bitmap.index + " # " + bitmap.bitmap.getByteCount());
                     }
 
                     @Override
@@ -110,14 +113,15 @@ public class VideoFrameHelper {
                 Integer.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)),
                 Integer.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT))
         };
-        Log.e("#### video ", size[0] + " # " + size[1]);
         float ratio = Math.min(dstSize[0] / (1f * size[0]), dstSize[1] / (1f * size[1]));
         return new int[]{(int) (size[0] * ratio), (int) (size[1] * ratio)};
     }
 
     public interface OnFrameBitmapListener {
         void onFrameObtainStart();
+
         void onFrameBitmap(Bitmap bitmap);
+
         void onFrameObtainComplete();
     }
 

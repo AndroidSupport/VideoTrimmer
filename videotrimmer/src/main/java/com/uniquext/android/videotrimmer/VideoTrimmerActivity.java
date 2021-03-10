@@ -18,6 +18,7 @@ import android.widget.VideoView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatTextView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -26,6 +27,8 @@ import com.uniquext.android.videotrimmer.ui.RangeSeekBar;
 import com.uniquext.android.widget.util.ViewMeasure;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Locale;
 
 /**
  * 　 　　   へ　　　 　／|
@@ -55,7 +58,9 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
     private RecyclerView recyclerView;
     private RangeSeekBar rangeSeekBar;
     private View vIndicator;
+    private AppCompatTextView tvComplete;
 
+    private File videoFile;
     private VideoTrimmerAdapter adapter;
     private VideoFrameHelper trimmerHelper;
     private LinearLayoutManager linearLayoutManager;
@@ -84,6 +89,7 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
         recyclerView = findViewById(R.id.recycleview);
         rangeSeekBar = findViewById(R.id.range_seek);
         vIndicator = findViewById(R.id.view_indicator);
+        tvComplete = findViewById(R.id.tv_complete);
         linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
 
         int[] screen = new int[2];
@@ -106,6 +112,19 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
                 changeVideoRange(rangeSeekBar.getStartOffset(), rangeSeekBar.getRangeLength());
             }
         });
+        tvComplete.setOnClickListener(v -> {
+            try {
+                TrimmerUtil.trim(
+                        videoFile.getAbsolutePath(),
+                        String.format(Locale.CHINA, "%s/trim_%s", videoFile.getParent(), videoFile.getName()),
+                        startTime,
+                        endTime
+                );
+            } catch (IOException e) {
+                Log.e("####", "Error");
+                e.printStackTrace();
+            }
+        });
     }
 
     private void initData() {
@@ -113,7 +132,8 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
         if (TextUtils.isEmpty(videoPath)) {
             onBackPressed();
         } else {
-            videoView.setVideoURI(Uri.fromFile(new File(videoPath)));
+            videoFile = new File(videoPath);
+            videoView.setVideoURI(Uri.fromFile(videoFile));
             trimmerHelper = new VideoFrameHelper(new int[]{100, 100}, this);
             trimmerHelper.getFrames(videoPath);
         }
@@ -142,6 +162,18 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
     @Override
     public void onRangeSeekBarComplete() {
         videoPlay();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        videoView.resume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        videoView.pause();
     }
 
     @Override
