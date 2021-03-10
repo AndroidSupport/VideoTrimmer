@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
-import android.view.animation.LinearInterpolator;
 import android.widget.VideoView;
 
 import androidx.annotation.NonNull;
@@ -114,8 +113,8 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
         });
         tvComplete.setOnClickListener(v -> {
             try {
-                TrimmerUtil.trim(
-                        videoFile.getAbsolutePath(),
+                TrimmerHelper.trim(
+                        videoFile,
                         String.format(Locale.CHINA, "%s/trim_%s", videoFile.getParent(), videoFile.getName()),
                         startTime,
                         endTime
