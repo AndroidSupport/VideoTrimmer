@@ -1,5 +1,9 @@
 package com.uniquext.android.videotrimmer;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -8,6 +12,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.LinearInterpolator;
 import android.widget.VideoView;
 
 import androidx.annotation.NonNull;
@@ -18,7 +23,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.uniquext.android.videotrimmer.adapter.VideoTrimmerAdapter;
 import com.uniquext.android.videotrimmer.ui.RangeSeekBar;
-import com.uniquext.android.widget.util.Convert;
 import com.uniquext.android.widget.util.ViewMeasure;
 
 import java.io.File;
@@ -50,9 +54,15 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
     private VideoView videoView;
     private RecyclerView recyclerView;
     private RangeSeekBar rangeSeekBar;
+    private View vIndicator;
 
     private VideoTrimmerAdapter adapter;
     private VideoFrameHelper trimmerHelper;
+    private LinearLayoutManager linearLayoutManager;
+
+    private float startTime = 0L;
+    private float endTime = 10 * 1000L;
+    private ObjectAnimator mIndicatorAnim;
 
     public static void startVideoTrimmerActivity(Activity activity, @NonNull String path, int requestCode) {
         Intent intent = new Intent(activity, VideoTrimmerActivity.class);
@@ -73,6 +83,8 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
         videoView = findViewById(R.id.view_player);
         recyclerView = findViewById(R.id.recycleview);
         rangeSeekBar = findViewById(R.id.range_seek);
+        vIndicator = findViewById(R.id.view_indicator);
+        linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
 
         int[] screen = new int[2];
         ViewMeasure.getScreenSize(getWindowManager(), screen);
@@ -84,50 +96,14 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-                LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
-                if (manager != null && newState == RecyclerView.SCROLL_STATE_IDLE) {
-                    //  前面有多少个
-                    int firstVisibleItem = manager.findFirstVisibleItemPosition();
-                    int lastVisibleItem = manager.findLastVisibleItemPosition();
-
-                   View start = manager.findViewByPosition(firstVisibleItem);
-
-                    Log.e("####", firstVisibleItem + " # " + start.getWidth() + " # " + (recyclerView.getPaddingStart() - start.getLeft())+ " # " + start.getRight());
-
-//                    int itemWidth = start.getWidth();
-//                    int itemRight = start.getRight();
-
-//                    //找到即将移出屏幕Item的position,position是移出屏幕item的数量
-//                    int position = linearLayoutManager.findFirstVisibleItemPosition();
-////根据position找到这个Item
-//                    View firstVisiableChildView = linearLayoutManager.findViewByPosition(position);
-////获取Item的高
-//                    int itemHeight = firstVisiableChildView.getHeight();
-////算出该Item还未移出屏幕的高度
-//                    int itemTop = firstVisiableChildView.getTop();
-////position移出屏幕的数量*高度得出移动的距离
-//                    int iposition = position * itemHeight;
-////减去该Item还未移出屏幕的部分可得出滑动的距离
-//                    iResult = iposition - itemTop;
-
-
-
-                    //  HORIZONTAL
-                    //找到即将移出屏幕Item的position,position是移出屏幕item的数量
-//                    int position = linearLayoutManager.findFirstVisibleItemPosition();
-////根据position找到这个Item
-//                    View firstVisiableChildView = linearLayoutManager.findViewByPosition(position);
-////获取Item的宽
-//                    int itemWidth = firstVisiableChildView.getWidth();
-////算出该Item还未移出屏幕的高度
-//                    int itemRight = firstVisiableChildView.getRight();
-////position移出屏幕的数量*高度得出移动的距离
-//                    int iposition = position * itemWidth;
-////因为横着的RecyclerV第一个取到的Item position为零所以计算时需要加一个宽
-//                    iResult = iposition - itemRight + itemWidth;
-
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    videoPlay();
                 }
+            }
+
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                changeVideoRange(rangeSeekBar.getStartOffset(), rangeSeekBar.getRangeLength());
             }
         });
     }
@@ -145,7 +121,7 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
 
     @Override
     public void onFrameObtainStart() {
-        videoView.start();
+
     }
 
     @Override
@@ -155,11 +131,17 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
 
     @Override
     public void onFrameObtainComplete() {
+        videoPlay();
     }
 
     @Override
-    public void onRangeSeekBarChanged(RangeSeekBar seekBar, float start, float end, int anchor) {
-//        recyclerView.get()
+    public void onRangeSeekBarChanged(RangeSeekBar seekBar, float start, float end, float length, int anchor) {
+        changeVideoRange(start, length);
+    }
+
+    @Override
+    public void onRangeSeekBarComplete() {
+        videoPlay();
     }
 
     @Override
@@ -172,5 +154,49 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         //        Uri.fromFile
+    }
+
+    private void changeVideoRange(float start, float length) {
+        videoView.pause();
+        if (mIndicatorAnim != null && mIndicatorAnim.isRunning()) {
+            mIndicatorAnim.pause();
+            vIndicator.setAlpha(0f);
+        }
+
+        int firstVisibleItem = linearLayoutManager.findFirstVisibleItemPosition();
+        View startView = linearLayoutManager.findViewByPosition(firstVisibleItem);
+        int left = firstVisibleItem * startView.getWidth() + recyclerView.getPaddingStart() - startView.getLeft();
+
+        startTime = transformLengthTime(left + start, startView.getWidth());
+        endTime =  transformLengthTime(left + start + length, startView.getWidth());
+        videoView.seekTo((int) startTime);
+    }
+
+    private void videoPlay() {
+        if (videoView.isPlaying()) return;
+        videoView.start();
+        startIndicatorAnimation();
+    }
+
+    private float transformLengthTime(float length, float unitLength) {
+        return length * 1000L / unitLength;
+    }
+
+    private void startIndicatorAnimation() {
+        vIndicator.setAlpha(1f);
+        mIndicatorAnim = ObjectAnimator.ofFloat(
+                vIndicator,
+                "translationX",
+                rangeSeekBar.getStartOffset(),
+                rangeSeekBar.getStartOffset() + rangeSeekBar.getRangeLength()
+        ).setDuration((long) (endTime - startTime));
+        mIndicatorAnim.setRepeatCount(ValueAnimator.INFINITE);
+        mIndicatorAnim.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+                videoView.seekTo((int) startTime);
+            }
+        });
+        mIndicatorAnim.start();
     }
 }

@@ -56,9 +56,9 @@ public class RangeSeekBar extends View {
     private float mOffsetX = 0;
 
     /**
-     * 初始值阈
+     * 最大值阈
      */
-    private int[] initialRange = new int[2];
+    private int[] maxRange = new int[2];
 
     private Bitmap startBitmap;
     private Bitmap endBitmap;
@@ -89,9 +89,9 @@ public class RangeSeekBar extends View {
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         initRangeBitmap();
-        initialRange[0] = Math.max(startBitmap.getWidth(), initialRange[0]);
-        initialRange[1] = Math.max(startBitmap.getWidth(), initialRange[1]);
-        mRangeRectF.set(initialRange[0], 1, getWidth() - initialRange[1], getHeight());
+        maxRange[0] = Math.max(startBitmap.getWidth(), maxRange[0]);
+        maxRange[1] = getWidth() - Math.max(startBitmap.getWidth(), maxRange[1]);
+        mRangeRectF.set(maxRange[0], 1, maxRange[1], getHeight());
     }
 
     @Override
@@ -104,39 +104,38 @@ public class RangeSeekBar extends View {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         final float coordinateX = event.getX();
-        @MotionAction final int motionAction = computerMotionAction(coordinateX);
-        if (motionAction == MotionAction.NONE) {
-            return super.onTouchEvent(event);
-        } else if (mRangeRectF.width() <= startBitmap.getWidth() + endBitmap.getWidth()) {
-            return true;
-        } else {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    mOffsetX =
-                    mAnchorMotionAction = motionAction;
-                case MotionEvent.ACTION_MOVE:
-                    if (mAnchorMotionAction == MotionAction.ANCHOR_START) {
-                        float left = Math.max(startBitmap.getWidth(), coordinateX);
-                        if (mRangeRectF.right - left > startBitmap.getWidth() + endBitmap.getWidth()) {
-                            mRangeRectF.left = left;
-                            onRangeSeekBarChangeListener.onRangeSeekBarChanged(this, mRangeRectF.left, mRangeRectF.right, MotionAction.ANCHOR_START);
-                            invalidate();
-                        }
-                    } else if (mAnchorMotionAction == MotionAction.ANCHOR_END) {
-                        float right = Math.min(getWidth() - endBitmap.getWidth(), coordinateX);
-                        if (right - mRangeRectF.left > startBitmap.getWidth() + endBitmap.getWidth()) {
-                            mRangeRectF.right = right;
-                            onRangeSeekBarChangeListener.onRangeSeekBarChanged(this, mRangeRectF.left, mRangeRectF.right, MotionAction.ANCHOR_END);
-                            invalidate();
-                        }
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                mAnchorMotionAction = computerMotionAction(coordinateX);
+                if (mAnchorMotionAction == MotionAction.ANCHOR_START) {
+                    mOffsetX = mRangeRectF.left - coordinateX;
+                } else if (mAnchorMotionAction == MotionAction.ANCHOR_END) {
+                    mOffsetX = mRangeRectF.right - coordinateX;
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (mAnchorMotionAction == MotionAction.ANCHOR_START) {
+                    float left = Math.max(maxRange[0], coordinateX + mOffsetX);
+                    if (mRangeRectF.left != left && left >= maxRange[0] && mRangeRectF.right - left > startBitmap.getWidth() + endBitmap.getWidth()) {
+                        mRangeRectF.left = left;
+                        changeRangeSeekBar(MotionAction.ANCHOR_START);
+                        invalidate();
                     }
-                    break;
-                case MotionEvent.ACTION_UP:
-                    mAnchorMotionAction = MotionAction.NONE;
-                    break;
-            }
-            return true;
+                } else if (mAnchorMotionAction == MotionAction.ANCHOR_END) {
+                    float right = Math.min(maxRange[1], coordinateX + mOffsetX);
+                    if (mRangeRectF.right != right && right <= maxRange[1] && right - mRangeRectF.left > startBitmap.getWidth() + endBitmap.getWidth()) {
+                        mRangeRectF.right = right;
+                        changeRangeSeekBar(MotionAction.ANCHOR_END);
+                        invalidate();
+                    }
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                mAnchorMotionAction = MotionAction.NONE;
+                onRangeSeekBarChangeListener.onRangeSeekBarComplete();
+                break;
         }
+        return mAnchorMotionAction != MotionAction.NONE || super.onTouchEvent(event);
     }
 
     private void initView(Context context, @Nullable AttributeSet attrs) {
@@ -146,8 +145,8 @@ public class RangeSeekBar extends View {
         mFramePaint.setStrokeWidth(FRAME_LINE_WIDTH_PX * density);
 
         TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.RangeSeekBar);
-        initialRange[0] = typedArray.getDimensionPixelOffset(R.styleable.RangeSeekBar_start, 1);
-        initialRange[1] = typedArray.getDimensionPixelOffset(R.styleable.RangeSeekBar_end, 0);
+        maxRange[0] = typedArray.getDimensionPixelOffset(R.styleable.RangeSeekBar_start, 1);
+        maxRange[1] = typedArray.getDimensionPixelOffset(R.styleable.RangeSeekBar_end, 0);
         typedArray.recycle();
     }
 
@@ -178,8 +177,24 @@ public class RangeSeekBar extends View {
         }
     }
 
+    private void changeRangeSeekBar(@MotionAction int motionAction) {
+        onRangeSeekBarChangeListener.onRangeSeekBarChanged(this, getStartOffset(), getEndOffset(), getRangeLength(), motionAction);
+    }
+
     public void setOnRangeSeekBarChangeListener(OnRangeSeekBarChangeListener onRangeSeekBarChangeListener) {
         this.onRangeSeekBarChangeListener = onRangeSeekBarChangeListener;
+    }
+
+    public float getStartOffset() {
+        return mRangeRectF.left - maxRange[0];
+    }
+
+    public float getEndOffset() {
+        return mRangeRectF.right - maxRange[1];
+    }
+
+    public float getRangeLength() {
+        return mRangeRectF.width();
     }
 
     public void recycle() {
@@ -188,7 +203,8 @@ public class RangeSeekBar extends View {
     }
 
     public interface OnRangeSeekBarChangeListener {
-        void onRangeSeekBarChanged(RangeSeekBar seekBar, float start, float end, @MotionAction int anchor);
+        void onRangeSeekBarChanged(RangeSeekBar seekBar, float start, float end, float length, @MotionAction int anchor);
+        void onRangeSeekBarComplete();
     }
 
 

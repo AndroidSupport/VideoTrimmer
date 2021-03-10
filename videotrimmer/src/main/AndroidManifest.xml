@@ -2,7 +2,9 @@
     package="com.uniquext.android.videotrimmer">
 
     <application>
-        <activity android:name=".VideoTrimmerActivity" />
+        <activity
+            android:name=".VideoTrimmerActivity"
+            android:theme="@style/TransparentTheme" />
     </application>
 
 </manifest>
