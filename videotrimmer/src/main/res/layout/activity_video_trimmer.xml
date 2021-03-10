@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    android:orientation="vertical">
+
+    <VideoView
+        android:id="@+id/view_player"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_margin="20dp"
+        android:layout_weight="1" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="45dp">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycleview"
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="horizontal"
+            android:paddingStart="20dp"
+            android:paddingEnd="35dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            tools:background="@android:color/white" />
+
+        <com.uniquext.android.videotrimmer.ui.RangeSeekBar
+            android:id="@+id/range_seek"
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            app:end="35dp"
+            app:start="20dp"
+            tools:background="@android:color/black" />
+
+    </FrameLayout>
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:layout_width="60dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="10dp"
+        android:background="@android:color/white"
+        android:gravity="center"
+        android:text="完成"
+        android:textSize="14sp" />
+
+
+</LinearLayout>
