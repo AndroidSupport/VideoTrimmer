@@ -98,6 +98,7 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
         adapter = new VideoTrimmerAdapter((int) itemWidth);
         recyclerView.setAdapter(adapter);
 
+        rangeSeekBar.setMinRange(itemWidth * 3);
         rangeSeekBar.setOnRangeSeekBarChangeListener(this);
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
