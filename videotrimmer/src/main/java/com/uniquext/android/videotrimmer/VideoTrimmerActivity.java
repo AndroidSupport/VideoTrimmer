@@ -21,6 +21,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.uniquext.android.videotrimmer.adapter.VideoTrimmerAdapter;
+import com.uniquext.android.videotrimmer.helper.TrimmerHelper;
+import com.uniquext.android.videotrimmer.helper.VideoFrameHelper;
 import com.uniquext.android.videotrimmer.ui.RangeSeekBar;
 import com.uniquext.android.widget.util.ViewMeasure;
 
@@ -50,8 +52,8 @@ import java.util.Locale;
  */
 public class VideoTrimmerActivity extends AppCompatActivity implements VideoFrameHelper.OnFrameBitmapListener, RangeSeekBar.OnRangeSeekBarChangeListener {
 
+    public static final String INTENT_VIDEO_INFO = "INTENT_VIDEO_INFO";
     private static final String INTENT_VIDEO_PATH = "INTENT_VIDEO_PATH";
-
     private VideoView videoView;
     private RecyclerView recyclerView;
     private RangeSeekBar rangeSeekBar;
@@ -110,22 +112,36 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
 
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                changeVideoRange(rangeSeekBar.getStartOffset(), rangeSeekBar.getRangeLength());
+                changeVideoRange(rangeSeekBar.getStartOffset(), rangeSeekBar.getRangeLength(), rangeSeekBar.getAnchor());
             }
         });
         tvComplete.setOnClickListener(v -> {
             try {
-                TrimmerHelper.trim(
-                        videoFile,
-                        String.format(Locale.CHINA, "%s/trim_%s", videoFile.getParent(), videoFile.getName()),
-                        startTime,
-                        endTime
-                );
+                showLoading();
+                String outPath = String.format(Locale.CHINA, "%s/trim_%d_%s", videoFile.getParent(), System.currentTimeMillis(), videoFile.getName());
+                VideoInfo videoInfo = TrimmerHelper.trim(videoFile, outPath, startTime, endTime);
+                hideLoading();
+                complete(videoInfo);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
         tvCancel.setOnClickListener(v -> onBackPressed());
+    }
+
+    private void showLoading() {
+
+    }
+
+    private void hideLoading() {
+
+    }
+
+    private void complete(VideoInfo videoInfo) {
+        Intent intent = new Intent();
+        intent.putExtra(INTENT_VIDEO_INFO, videoInfo);
+        setResult(Activity.RESULT_OK, intent);
+        onBackPressed();
     }
 
     private void initData() {
@@ -157,7 +173,7 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
 
     @Override
     public void onRangeSeekBarChanged(RangeSeekBar seekBar, float start, float end, float length, int anchor) {
-        changeVideoRange(start, length);
+        changeVideoRange(start, length, anchor);
     }
 
     @Override
@@ -168,7 +184,7 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
     @Override
     protected void onResume() {
         super.onResume();
-        videoView.resume();
+        videoView.start();
     }
 
     @Override
@@ -183,13 +199,7 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
         rangeSeekBar.recycle();
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        //        Uri.fromFile
-    }
-
-    private void changeVideoRange(float start, float length) {
+    private void changeVideoRange(float start, float length, int anchor) {
         videoView.pause();
         if (mIndicatorAnim != null && mIndicatorAnim.isRunning()) {
             mIndicatorAnim.pause();
@@ -202,11 +212,16 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
 
         startTime = transformLengthTime(left + start, startView.getWidth());
         endTime = transformLengthTime(left + start + length, startView.getWidth());
-        videoView.seekTo((int) startTime);
+        if (anchor == RangeSeekBar.MotionAction.ANCHOR_START) {
+            videoView.seekTo((int) startTime);
+        } else if (anchor == RangeSeekBar.MotionAction.ANCHOR_END) {
+            videoView.seekTo((int) endTime);
+        }
     }
 
     private void videoPlay() {
         if (videoView.isPlaying()) return;
+        videoView.seekTo((int) startTime);
         videoView.start();
         startIndicatorAnimation();
     }

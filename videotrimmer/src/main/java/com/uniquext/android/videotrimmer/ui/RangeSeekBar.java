@@ -48,6 +48,7 @@ public class RangeSeekBar extends View {
 
     private RectF mRangeRectF = new RectF();
     private Paint mFramePaint = new Paint();
+
     /**
      * 当前操作的锚点
      */
@@ -67,10 +68,6 @@ public class RangeSeekBar extends View {
      * 最小距离
      */
     private float minRange = 0;
-    /**
-     * 默认最短距离
-     * 左右锚点图片宽度
-     */
     private float defaultMinRange = 0;
 
     private Bitmap startBitmap;
@@ -199,10 +196,6 @@ public class RangeSeekBar extends View {
         this.onRangeSeekBarChangeListener = onRangeSeekBarChangeListener;
     }
 
-    /**
-     * 设置最短阈值
-     * @param minRange
-     */
     public void setMinRange(float minRange) {
         this.minRange = Math.max(minRange, defaultMinRange);
     }
@@ -217,6 +210,10 @@ public class RangeSeekBar extends View {
 
     public float getRangeLength() {
         return mRangeRectF.width();
+    }
+
+    public int getAnchor() {
+        return mAnchorMotionAction;
     }
 
     public void recycle() {

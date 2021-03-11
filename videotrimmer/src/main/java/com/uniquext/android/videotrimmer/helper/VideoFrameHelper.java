@@ -1,4 +1,4 @@
-package com.uniquext.android.videotrimmer;
+package com.uniquext.android.videotrimmer.helper;
 
 import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
@@ -74,9 +74,9 @@ public class VideoFrameHelper {
                     @Override
                     public Bitmap apply(Long aLong) throws Exception {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-                            return retriever.getScaledFrameAtTime(aLong * 1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, targetSize[0], targetSize[1]);
+                            return retriever.getScaledFrameAtTime(aLong * 1000, MediaMetadataRetriever.OPTION_CLOSEST, targetSize[0], targetSize[1]);
                         } else {
-                            return retriever.getFrameAtTime(aLong * 1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+                            return retriever.getFrameAtTime(aLong * 1000, MediaMetadataRetriever.OPTION_CLOSEST);
                         }
                     }
                 })

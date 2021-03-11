@@ -1,9 +1,11 @@
-package com.uniquext.android.videotrimmer;
+package com.uniquext.android.videotrimmer.helper;
 
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
+
+import com.uniquext.android.videotrimmer.VideoInfo;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +42,7 @@ public class TrimmerHelper {
      * @param endTime
      * @throws IOException
      */
-    public static void trim(File source, String outputPath, float startTime, float endTime) throws IOException {
+    public static VideoInfo trim(File source, String outputPath, float startTime, float endTime) throws IOException {
         long startTimeUs = (long) (startTime * 1000L);
         long endTimeUs = (long) (endTime * 1000L);
 
@@ -71,11 +73,18 @@ public class TrimmerHelper {
         mediaMuxer.release();
         mediaExtractor.release();
 
+        File file = new File(outputPath);
+        return new VideoInfo(file.getName(), outputPath, "video/mp4", endTimeUs - startTimeUs, file.length());
     }
 
     private static void initOrientation(MediaMuxer mediaMuxer, MediaExtractor mediaExtractor, int videoTrack) {
-        MediaFormat videoFormat = mediaExtractor.getTrackFormat(videoTrack);
-        mediaMuxer.setOrientationHint(videoFormat.getInteger(MediaFormat.KEY_ROTATION));
+        try {
+            MediaFormat videoFormat = mediaExtractor.getTrackFormat(videoTrack);
+            // java.lang.NullPointerException: Attempt to invoke virtual method 'int java.lang.Integer.intValue()' on a null object reference
+            mediaMuxer.setOrientationHint(videoFormat.getInteger(MediaFormat.KEY_ROTATION));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private static void writeSampleData(MediaMuxer mediaMuxer, MediaExtractor mediaExtractor, ByteBuffer inputBuffer, long startTimeUs, long endTimeUs, int mediaExtractorTrack, int mediaMuxerTrack) {
