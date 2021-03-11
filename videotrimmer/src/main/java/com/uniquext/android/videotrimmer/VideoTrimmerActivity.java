@@ -57,6 +57,7 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
     private RangeSeekBar rangeSeekBar;
     private View vIndicator;
     private AppCompatTextView tvComplete;
+    private AppCompatTextView tvCancel;
 
     private File videoFile;
     private VideoTrimmerAdapter adapter;
@@ -88,6 +89,7 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
         rangeSeekBar = findViewById(R.id.range_seek);
         vIndicator = findViewById(R.id.view_indicator);
         tvComplete = findViewById(R.id.tv_complete);
+        tvCancel = findViewById(R.id.tv_cancel);
         linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
 
         int[] screen = new int[2];
@@ -122,6 +124,7 @@ public class VideoTrimmerActivity extends AppCompatActivity implements VideoFram
                 e.printStackTrace();
             }
         });
+        tvCancel.setOnClickListener(v -> onBackPressed());
     }
 
     private void initData() {
