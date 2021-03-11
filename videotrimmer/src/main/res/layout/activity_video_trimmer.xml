@@ -11,12 +11,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
-    <VideoView
-        android:id="@+id/view_player"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_margin="20dp"
-        android:layout_weight="1" />
+        android:layout_weight="1">
+
+        <VideoView
+            android:id="@+id/view_player"
+            android:layout_gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -27,7 +34,6 @@
             android:id="@+id/recycleview"
             android:layout_width="match_parent"
             android:layout_height="45dp"
-            android:clipChildren="false"
             android:clipToPadding="false"
             android:orientation="horizontal"
             android:paddingStart="38dp"
